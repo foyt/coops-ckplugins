@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ckplugins" default="archives">
+
+  <property name="project" value="ckplugins" />
+  <property name="version" value="0.0.7" />
+
+	<description>Build file for CoOps CKEditor plugins</description>
+
+	<target name="build">
+		<delete dir="dist"/>
+		
+		<mkdir dir="dist"/>
+		<mkdir dir="dist/dialogs"/>
+		
+		<copy todir="dist">
+			<fileset dir="src" />
+	  </copy>
+
+		<java jar="${yuicompressor-jar}" fork="true">
+			<arg value="dist/plugin.js" />
+			<arg value="-o" />
+			<arg value="dist/plugin.js" />
+		</java>
+		
+		<java jar="${yuicompressor-jar}" fork="true">
+      <arg value="dist/dialogs/settings.js" />
+      <arg value="-o" />
+      <arg value="dist/dialogs/settings.js" />
+    </java>
+	</target>
+	
+	<target name="archives">
+	  <zip destfile="change-${version}.zip" basedir="." includes="change/plugin.js"></zip>
+    <zip destfile="coops-${version}.zip" basedir="." includes="coops/plugin.js"></zip>
+    <zip destfile="coops-connector-${version}.zip" basedir="." includes="coops-connector/plugin.js"></zip>
+    <zip destfile="coops-cursors-${version}.zip" basedir="." includes="coops-cursors/plugin.js"></zip>
+    <zip destfile="coops-dmp-${version}.zip" basedir="." includes="coops-dmp/plugin.js"></zip>
+	</target>
+	
+</project>
