@@ -9,6 +9,7 @@ Installation
 
 1. Download required plugins:
 
+    * [http://ckeditor.com/addon/coops](http://ckeditor.com/addon/coops)
     * [http://ckeditor.com/addon/change](http://ckeditor.com/addon/change)
     * [http://ckeditor.com/addon/coops-connector](http://ckeditor.com/addon/coops-connector)
     * [http://ckeditor.com/addon/coops-dmp](http://ckeditor.com/addon/coops-dmp)
