@@ -35,6 +35,7 @@
     <zip destfile="coops-connector-${version}.zip" basedir="." includes="coops-connector/plugin.js"></zip>
     <zip destfile="coops-cursors-${version}.zip" basedir="." includes="coops-cursors/plugin.js"></zip>
     <zip destfile="coops-dmp-${version}.zip" basedir="." includes="coops-dmp/plugin.js"></zip>
+    <zip destfile="coops-sessionevents-${version}.zip" basedir="." includes="coops-sessionevents/plugin.js"></zip>
 	</target>
 	
 </project>
