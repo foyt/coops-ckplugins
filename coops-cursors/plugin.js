@@ -143,6 +143,10 @@
       },
 
       _dispatchSelectionChanges: function (dispatchable) {
+        if (this._editor.readOnly) {
+          return;
+        }
+        
         if ((this._lastDispatched && this._dispatchablesEqual(this._lastDispatched, dispatchable)) || (this._lastSaved && this._dispatchablesEqual(this._lastSaved, dispatchable))) {
           return;
         }

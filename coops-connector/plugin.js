@@ -132,6 +132,7 @@
   DefaultConnector = CKEDITOR.tools.createClass({
     $ : function(editor) {
       this._editor = editor;
+      this._leavingPage = false;
       this._useWebSocket = false;
       this._patchData = {};
       this._ioHandler = editor.config.coops.restIOHandler||new DefaultIOHandler(editor);
@@ -174,20 +175,15 @@
               var secure = window.location.protocol.indexOf('https') === 0;
               var webSocketUrl = secure ? joinData.extensions.webSocket.wss : joinData.extensions.webSocket.ws;
               if (webSocketUrl) {
-                if ((typeof window.WebSocket) !== 'undefined') {
-                  this._webSocket = new WebSocket(webSocketUrl);
-                } else if ((typeof window.MozWebSocket) !== 'undefined') {
-                  this._webSocket = new MozWebSocket(webSocketUrl);
-                }
-                
+                this._webSocket = this._openWebSocket(webSocketUrl);
                 if (this._webSocket) {
                   this._webSocket.onmessage = CKEDITOR.tools.bind(this._onWebSocketMessage, this);
                   this._webSocket.onclose = CKEDITOR.tools.bind(this._onWebSocketClose, this);
                   switch (this._webSocket.readyState) {
-                    case 0:
+                    case this._webSocket.CONNECTING:
                       this._webSocket.onopen = CKEDITOR.tools.bind(this._onWebSocketOpen, this);
                     break;
-                    case 1:
+                    case this._webSocket.OPEN:
                       this._startListening();
                     break;
                     default:
@@ -215,6 +211,9 @@
               }, this);
             }
           }
+          
+          window.onbeforeunload = CKEDITOR.tools.bind(this._onWindowBeforeUnload, this);
+          this._editor.on("CoOPS:ConnectionLost", this._onConnectionLost, this);
           
           event.data.markConnected();
         }
@@ -294,15 +293,65 @@
         }, this));
       },
       
+      _onWindowBeforeUnload: function (event) {
+        this._leavingPage = true;
+      },
+      
+      _tryReconnect: function (attemptsLeft) {
+        if (this._useWebSocket) {
+          this._webSocket = this._openWebSocket(this._webSocket.url);
+          
+          CKEDITOR.tools.setTimeout(function () {
+            if (this._webSocket.readyState === this._webSocket.OPEN) {
+              this._webSocket.onmessage = CKEDITOR.tools.bind(this._onWebSocketMessage, this);
+              this._webSocket.onclose = CKEDITOR.tools.bind(this._onWebSocketClose, this);
+              this._editor.fire("CoOPS:Reconnect");
+            } else {
+              if (attemptsLeft <= 0) {
+                this._editor.fire("CoOPS:Error", {
+                  severity: "CRITICAL",
+                  message: "Could not reconnect to server. Please try again later"
+                });
+              } else {
+                this._tryReconnect(attemptsLeft - 1);
+              }
+            }
+          }, this._editor.config.coops.reconnectTime||3000, this);
+        } else {
+          CKEDITOR.tools.setTimeout(function () {
+            this._ioHandler.get(this._editor.config.coops.serverUrl + '/update', [{name: "sessionId", value: this._sessionId }, { name: "revisionNumber", value: this._revisionNumber }], CKEDITOR.tools.bind(function (status, responseJson, responseText) {
+              if ((status === 200) || (status === 204)) {
+                this._startUpdatePolling();
+                this._editor.fire("CoOPS:Reconnect");
+              } else {
+                if (attemptsLeft <= 0) {
+                  this._editor.fire("CoOPS:Error", {
+                    severity: "CRITICAL",
+                    message: "Could not reconnect to server. Please try again later"
+                  });
+                } else {
+                  this._tryReconnect(attemptsLeft - 1);
+                }
+              }
+            }, this));
+          }, this._editor.config.coops.reconnectTime||3000, this);
+        }
+      },
+      
+      _onConnectionLost: function (event) {
+        this._tryReconnect((this._editor.config.coops.maxReconnections||3) - 1);
+      },
+      
       _onWebSocketOpen: function (event) {
         this._startListening();
       },
       
       _onWebSocketClose: function (event) {
-        this._editor.fire("CoOPS:Error", {
-          severity: "SEVERE",
-          message: "WebSocket closed unexpectedly"
-        });
+        if (!this._leavingPage) {
+          this._editor.fire("CoOPS:ConnectionLost", {
+            message: "Lost connection to server, trying to reconnect..."
+          });
+        }
       },
       
       _onWebSocketMessage: function (event) {
@@ -338,6 +387,16 @@
             message: "Invalid WebSocket message received"
           });
         }
+      },
+      
+      _openWebSocket: function (url) {
+        if ((typeof window.WebSocket) !== 'undefined') {
+          return new WebSocket(url);
+        } else if ((typeof window.MozWebSocket) !== 'undefined') {
+          return new MozWebSocket(url);
+        }
+        
+        return null;
       },
       
       _startListening: function () {
@@ -410,18 +469,27 @@
       
       _checkUpdates: function (callback) {
         var url = this._editor.config.coops.serverUrl + '/update';
-        this._ioHandler.get(url, [{ name: "revisionNumber", value: this._revisionNumber }], CKEDITOR.tools.bind(function (status, responseJson, responseText) {
-          if (status === 200) {
-            this._applyPatches(responseJson);
-          } else if ((status !== 204) && (status !== 304)) {
-            this._editor.fire("CoOPS:Error", {
-              severity: "WARNING",
-              message: "Failed to synchronize collaborator changes from the server"
-            });
-          }
-          
-          if (callback) {
-            callback();
+        this._ioHandler.get(url, [{name: "sessionId", value: this._sessionId }, { name: "revisionNumber", value: this._revisionNumber }], CKEDITOR.tools.bind(function (status, responseJson, responseText) {
+          if (status === 0) {
+            this._stopUpdatePolling();
+            if (!this._leavingPage) {
+              this._editor.fire("CoOPS:ConnectionLost", {
+                message: "Lost connection to server, trying to reconnect..."
+              });
+            }
+          } else {
+            if (status === 200) {
+              this._applyPatches(responseJson);
+            } else if ((status !== 204) && (status !== 304)) {
+              this._editor.fire("CoOPS:Error", {
+                severity: "WARNING",
+                message: "Failed to synchronize collaborator changes from the server"
+              });
+            }
+            
+            if (callback) {
+              callback();
+            }
           }
         }, this));
       },
@@ -460,7 +528,7 @@
         } else {
           // Our patch was accepted, yay!
           this._revisionNumber = patch.revisionNumber;
-          var patchData = this._patchData[this._revisionNumber];
+          var patchData = this._patchData[this._revisionNumber]||{};
 
           this._editor.fire("CoOPS:PatchAccepted", {
             revisionNumber: this._revisionNumber,

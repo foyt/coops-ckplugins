@@ -21,6 +21,8 @@
       this._editor.on('CoOPS:ContentReverted', this._onContentReverted, this);
       this._editor.on('CoOPS:PatchApplied', this._onPatchApplied, this);
       this._editor.on("CoOPS:Joined", this._onJoined, this);
+      this._editor.on("CoOPS:ConnectionLost", this._onConnectionLost, this);
+      this._editor.on("CoOPS:Reconnect", this._onReconnect, this);
     },
     proto : {
       getEditor: function () {
@@ -161,6 +163,14 @@
             message: "Could not connect to CoOPS Server"
           });
         }
+      },
+      
+      _onConnectionLost: function (event) {
+        this._editor.setReadOnly(true);
+      },
+      
+      _onReconnect: function (event) {
+        this._editor.setReadOnly(false);
       }
     }
   });
