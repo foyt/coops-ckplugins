@@ -1,2 +1,6 @@
+.DS_Store
 /.project
 /*.zip
+/.settings/
+/.tern-project
+/node_modules/
