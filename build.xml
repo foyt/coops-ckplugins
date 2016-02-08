@@ -2,7 +2,7 @@
 <project name="ckplugins" default="archives">
 
   <property name="project" value="ckplugins" />
-  <property name="version" value="0.0.9" />
+  <property name="version" value="0.0.10" />
 
 	<description>Build file for CoOps CKEditor plugins</description>
 
