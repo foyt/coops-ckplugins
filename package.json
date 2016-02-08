@@ -1,0 +1,11 @@
+{
+  "name": "coops-ckplugins",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-subgrunt": "^1.1.0"
+  }
+}
