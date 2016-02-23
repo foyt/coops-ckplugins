@@ -6,7 +6,7 @@
     "type": "LGPL-v3",
     "url": "http://www.gnu.org/licenses/lgpl-3.0.html"
   }],
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/foyt/coops-ckplugins",
   "engines": {
     "node": ">= 0.10.0"

@@ -166,7 +166,7 @@
       var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 
       var _this = this;
-      this._observer = new MutationObserver(function(mutations) {
+      this._observer = new MutationObserver(function(mutations, observer) {
         CKEDITOR.tools.setTimeout(function() {
           this.checkChange();
         }, 0, _this);
@@ -179,7 +179,6 @@
        */
       start : function() {
         var editorDocument = this._editor.document.$;
-
         this._observer.observe(editorDocument, {
           attributes : true,
           childList : true,
@@ -668,9 +667,12 @@
       ] : [];
 
       var changeObserver = null;
-      if ((typeof (window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver) === 'function')) {
-        // Modern browsers support mutation observer
-        changeObserver = new MutationChangeObserver(editor, propertyHandlers);
+      // MutationChangeObserver does not track content editable elements on IE and EDGE
+      if (!CKEDITOR.env.ie && !CKEDITOR.env.edge) {
+        if ((typeof (window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver) === 'function')) {
+          // Modern browsers support mutation observer
+          changeObserver = new MutationChangeObserver(editor, propertyHandlers);
+        }
       }
 
       if (!changeObserver) {
@@ -682,7 +684,7 @@
           changeObserver = new PollingChangeObserver(editor, propertyHandlers);
         }
       }
-
+      
       editor._changeObserver = changeObserver;
       
       editor.on('instanceReady', function() {
