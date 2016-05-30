@@ -80,11 +80,11 @@
           }
 
           if (this._oldContent !== currentContent) {
-            this._oldContent = currentContent;
             this._editor.fire("contentChange", {
               oldContent : this._oldContent,
               currentContent : currentContent,
             });
+            this._oldContent = currentContent;
           }
         }
       },
@@ -688,6 +688,7 @@
       editor._changeObserver = changeObserver;
       
       editor.on('instanceReady', function() {
+        this.getChangeObserver().reset();
         this.getChangeObserver().start();
       });
 
