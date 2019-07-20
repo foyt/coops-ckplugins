@@ -1,3 +1,7 @@
+# THIS PROJECT IS DEPRECATED
+
+This project is no longer maintained
+
 coops-ckplugins
 ===============
 This is a set of plugins that provide CoOps implementation for CKEditor (https://github.com/foyt/coops-spec/).
